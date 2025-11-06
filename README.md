@@ -1,5 +1,10 @@
 # 🔄 Relay
 
+[![npm version](https://img.shields.io/npm/v/@talyuk/relay.svg)](https://www.npmjs.com/package/@talyuk/relay)
+[![npm downloads](https://img.shields.io/npm/dm/@talyuk/relay.svg)](https://www.npmjs.com/package/@talyuk/relay)
+[![Docker Pulls](https://img.shields.io/docker/pulls/talyuk/relay.svg)](https://hub.docker.com/r/talyuk/relay)
+[![License](https://img.shields.io/npm/l/@talyuk/relay.svg)](https://github.com/talyuk/relay/blob/main/LICENSE)
+
 Dead-simple tunneling with random 3-word subdomains. Self-hosted alternative to ngrok.
 
 ```bash

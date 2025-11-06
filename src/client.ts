@@ -67,6 +67,7 @@ export function startClient(options: ClientOptions) {
   let ws: WebSocket | null = null;
   let reconnectTimeout: NodeJS.Timeout | null = null;
   let isConnected = false;
+  let assignedSubdomain: string | null = SUBDOMAIN || null;
 
   function connect() {
     if (reconnectTimeout) {
@@ -86,9 +87,9 @@ export function startClient(options: ClientOptions) {
         secret: SECRET
       };
 
-      if (SUBDOMAIN) {
-        authMessage.subdomain = SUBDOMAIN;
-        console.log(`Requesting subdomain: ${SUBDOMAIN}`);
+      if (assignedSubdomain) {
+        authMessage.subdomain = assignedSubdomain;
+        console.log(`Requesting subdomain: ${assignedSubdomain}`);
       }
 
       ws!.send(JSON.stringify(authMessage));
@@ -99,6 +100,11 @@ export function startClient(options: ClientOptions) {
         const msg = JSON.parse(data.toString());
 
         if (msg.type === 'ready') {
+          // Store the assigned subdomain for reconnections
+          if (msg.subdomain && !assignedSubdomain) {
+            assignedSubdomain = msg.subdomain;
+          }
+          
           console.log();
           console.log(`🔄 Relay active!`);
           console.log(`   ${msg.url}`);
