@@ -1,0 +1,32 @@
+{
+  "name": "@talyuk/relay",
+  "version": "1.0.0",
+  "description": "Dead-simple tunneling with random 3-word subdomains",
+  "main": "dist/index.js",
+  "bin": {
+    "relay": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "dev": "tsx src/cli.ts",
+    "dev:server": "tsx src/cli.ts server",
+    "dev:client": "tsx src/cli.ts 3000"
+  },
+  "keywords": ["tunnel", "ngrok", "expose", "proxy", "webhook", "subdomain", "relay"],
+  "author": "talyuk",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/talyuk/relay"
+  },
+  "dependencies": {
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.9.0",
+    "@types/ws": "^8.5.8",
+    "tsx": "^4.6.2",
+    "typescript": "^5.2.2"
+  }
+}
