@@ -136,16 +136,25 @@ export function startClient(options: ClientOptions) {
               responseHeaders[key] = value;
             });
 
-            ws!.send(JSON.stringify({
+            const responseMessage = {
               type: 'response',
               id: msg.id,
               status: response.status,
               headers: responseHeaders,
               body: responseBody,
               encoding: 'base64'
-            }));
+            };
 
-            console.log(`${msg.method} ${msg.path} → ${response.status}`);
+            const responseMessageStr = JSON.stringify(responseMessage);
+
+            // Send response - add error handling for large messages
+            try {
+              ws!.send(responseMessageStr);
+              console.log(`${msg.method} ${msg.path} → ${response.status} (${Math.round(arrayBuffer.byteLength / 1024)}KB)`);
+            } catch (sendError) {
+              console.error(`Failed to send response: ${(sendError as Error).message}`);
+              console.error(`Response size: ${Math.round(arrayBuffer.byteLength / 1024)}KB, JSON size: ${Math.round(responseMessageStr.length / 1024)}KB`);
+            }
           } catch (error) {
             const err = error as Error;
             console.error(`Error forwarding request: ${err.message}`);

@@ -179,20 +179,37 @@ export function startServer() {
             clearTimeout(pending.timeout);
             pendingRequests.delete(msg.id);
 
+            // Decode body first if present
+            let body: Buffer | undefined;
+            if (msg.body !== undefined && msg.body !== null) {
+              body = msg.encoding === 'base64'
+                ? Buffer.from(msg.body, 'base64')
+                : Buffer.from(typeof msg.body === 'string' ? msg.body : JSON.stringify(msg.body));
+            }
+
+            // Set headers before writeHead
             if (msg.headers) {
               Object.entries(msg.headers).forEach(([key, value]) => {
-                pending.res.setHeader(key, value as string);
+                // Skip content-encoding and transfer-encoding since we're sending uncompressed data
+                // Also skip content-length as we'll set it based on actual body size
+                const lowerKey = key.toLowerCase();
+                if (lowerKey !== 'content-encoding' && 
+                    lowerKey !== 'transfer-encoding' && 
+                    lowerKey !== 'content-length') {
+                  pending.res.setHeader(key, value as string);
+                }
               });
+            }
+
+            // Set correct content-length if we have a body
+            if (body) {
+              pending.res.setHeader('content-length', body.length);
             }
 
             pending.res.writeHead(msg.status || 200);
 
-            if (msg.body) {
-              // Decode if base64 encoded
-              const body = msg.encoding === 'base64'
-                ? Buffer.from(msg.body, 'base64')
-                : Buffer.from(typeof msg.body === 'string' ? msg.body : JSON.stringify(msg.body));
-
+            // Send body
+            if (body) {
               pending.res.end(body);
             } else {
               pending.res.end();

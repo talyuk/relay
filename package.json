@@ -1,6 +1,6 @@
 {
   "name": "@talyuk/relay",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Dead-simple tunneling with random 3-word subdomains",
   "main": "dist/index.js",
   "bin": {
