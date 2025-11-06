@@ -53,7 +53,7 @@ export function startClient(options: ClientOptions) {
   }
 
   const localUrl = `http://${targetHost}:${targetPort}`;
-  
+
   // Auto-detect protocol: use ws:// for localhost/127.0.0.1, wss:// for everything else
   let serverUrl: string;
   if (SERVER.startsWith('ws://') || SERVER.startsWith('wss://')) {
@@ -80,17 +80,17 @@ export function startClient(options: ClientOptions) {
     ws.on('open', () => {
       console.log('✓ Connected to server');
       isConnected = true;
-      
+
       const authMessage: any = {
         type: 'auth',
         secret: SECRET
       };
-      
+
       if (SUBDOMAIN) {
         authMessage.subdomain = SUBDOMAIN;
         console.log(`Requesting subdomain: ${SUBDOMAIN}`);
       }
-      
+
       ws!.send(JSON.stringify(authMessage));
     });
 
@@ -121,22 +121,14 @@ export function startClient(options: ClientOptions) {
 
             const response = await fetch(url, {
               method: msg.method,
-              headers: headers as HeadersInit,
+              headers: headers as Headers,
               body: msg.body || undefined,
               redirect: 'manual'
             });
 
-            // Get response body
-            const contentType = response.headers.get('content-type') || '';
-            let responseBody;
-            
-            if (contentType.includes('application/json')) {
-              responseBody = await response.json();
-            } else if (contentType.includes('text/')) {
-              responseBody = await response.text();
-            } else {
-              responseBody = await response.text();
-            }
+            // Read body as buffer to handle binary/large data properly
+            const arrayBuffer = await response.arrayBuffer();
+            const responseBody = Buffer.from(arrayBuffer).toString('base64');
 
             // Convert Headers to plain object
             const responseHeaders: Record<string, string> = {};
@@ -149,20 +141,22 @@ export function startClient(options: ClientOptions) {
               id: msg.id,
               status: response.status,
               headers: responseHeaders,
-              body: responseBody
+              body: responseBody,
+              encoding: 'base64'
             }));
 
             console.log(`${msg.method} ${msg.path} → ${response.status}`);
           } catch (error) {
             const err = error as Error;
             console.error(`Error forwarding request: ${err.message}`);
-            
+
             ws!.send(JSON.stringify({
               type: 'response',
               id: msg.id,
               status: 502,
               headers: { 'content-type': 'text/plain' },
-              body: `Bad Gateway: ${err.message}`
+              body: Buffer.from(`Bad Gateway: ${err.message}`).toString('base64'),
+              encoding: 'base64'
             }));
           }
         }

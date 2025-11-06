@@ -122,31 +122,31 @@ export function startServer() {
           }
 
           let subdomain: string;
-          
+
           // Check if client requested a custom subdomain
           if (msg.subdomain) {
             const requested = msg.subdomain.toLowerCase().trim();
-            
+
             // Validate subdomain format (alphanumeric + hyphens, 3-63 chars)
             if (!/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(requested)) {
-              ws.send(JSON.stringify({ 
-                type: 'error', 
-                message: 'Invalid subdomain format. Use only lowercase letters, numbers, and hyphens (3-63 chars)' 
+              ws.send(JSON.stringify({
+                type: 'error',
+                message: 'Invalid subdomain format. Use only lowercase letters, numbers, and hyphens (3-63 chars)'
               }));
               ws.close();
               return;
             }
-            
+
             // Check if subdomain is available
             if (tunnels.has(requested)) {
-              ws.send(JSON.stringify({ 
-                type: 'error', 
-                message: `Subdomain '${requested}' is already in use. Choose a different name or omit --subdomain for random.` 
+              ws.send(JSON.stringify({
+                type: 'error',
+                message: `Subdomain '${requested}' is already in use. Choose a different name or omit --subdomain for random.`
               }));
               ws.close();
               return;
             }
-            
+
             subdomain = requested;
             console.log(`✓ Custom subdomain requested: ${subdomain}`);
           } else {
@@ -166,10 +166,10 @@ export function startServer() {
 
           connection = { ws, subdomain, connectedAt: new Date() };
           tunnels.set(subdomain, connection);
-          
+
           const url = `https://${subdomain}.${HOSTNAME}`;
           console.log(`✓ Relay established: ${url}`);
-          
+
           ws.send(JSON.stringify({ type: 'ready', subdomain, url }));
         }
 
@@ -186,13 +186,14 @@ export function startServer() {
             }
 
             pending.res.writeHead(msg.status || 200);
-            
+
             if (msg.body) {
-              if (typeof msg.body === 'string') {
-                pending.res.end(msg.body);
-              } else {
-                pending.res.end(JSON.stringify(msg.body));
-              }
+              // Decode if base64 encoded
+              const body = msg.encoding === 'base64'
+                ? Buffer.from(msg.body, 'base64')
+                : Buffer.from(typeof msg.body === 'string' ? msg.body : JSON.stringify(msg.body));
+
+              pending.res.end(body);
             } else {
               pending.res.end();
             }
@@ -222,8 +223,8 @@ export function startServer() {
     // Health check
     if (subdomain === HOSTNAME.split('.')[0] || host === HOSTNAME) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ 
-        status: 'ok', 
+      res.end(JSON.stringify({
+        status: 'ok',
         activeRelays: tunnels.size,
         hostname: HOSTNAME
       }));
