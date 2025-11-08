@@ -66,6 +66,7 @@ export function startClient(options: ClientOptions) {
 
   let ws: WebSocket | null = null;
   let reconnectTimeout: NodeJS.Timeout | null = null;
+  let pingInterval: NodeJS.Timeout | null = null;
   let isConnected = false;
   let assignedSubdomain: string | null = SUBDOMAIN || null;
 
@@ -93,6 +94,16 @@ export function startClient(options: ClientOptions) {
       }
 
       ws!.send(JSON.stringify(authMessage));
+
+      // Start heartbeat - ping every 30 seconds to keep connection alive
+      if (pingInterval) {
+        clearInterval(pingInterval);
+      }
+      pingInterval = setInterval(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.ping();
+        }
+      }, 30000);
     });
 
     ws.on('message', async (data) => {
@@ -104,7 +115,7 @@ export function startClient(options: ClientOptions) {
           if (msg.subdomain && !assignedSubdomain) {
             assignedSubdomain = msg.subdomain;
           }
-          
+
           console.log();
           console.log(`🔄 Relay active!`);
           console.log(`   ${msg.url}`);
@@ -182,6 +193,10 @@ export function startClient(options: ClientOptions) {
 
     ws.on('close', () => {
       isConnected = false;
+      if (pingInterval) {
+        clearInterval(pingInterval);
+        pingInterval = null;
+      }
       console.log('✗ Disconnected from server');
       console.log('Reconnecting in 5 seconds...');
       reconnectTimeout = setTimeout(connect, 5000);
@@ -197,6 +212,9 @@ export function startClient(options: ClientOptions) {
     if (reconnectTimeout) {
       clearTimeout(reconnectTimeout);
     }
+    if (pingInterval) {
+      clearInterval(pingInterval);
+    }
     if (ws) {
       ws.close();
     }
@@ -206,6 +224,9 @@ export function startClient(options: ClientOptions) {
   process.on('SIGTERM', () => {
     if (reconnectTimeout) {
       clearTimeout(reconnectTimeout);
+    }
+    if (pingInterval) {
+      clearInterval(pingInterval);
     }
     if (ws) {
       ws.close();
